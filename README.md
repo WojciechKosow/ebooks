@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ebook store
 
-## Getting Started
+A dead-simple store that sells one product (a PDF + a ZIP) with Stripe
+Checkout. Flow: **landing → Stripe payment → download both files**.
 
-First, run the development server:
+## How it stays secure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+The two files live in `/content`, **not** `/public`. Files in `/public`
+are served to anyone on the internet; files in `/content` are only sent
+through `/api/download/...`, which first checks with Stripe that the order
+was paid. So no one can download without buying.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Add your Stripe secret key. Copy `.env.example` to `.env.local` and set:
 
-To learn more about Next.js, take a look at the following resources:
+   ```
+   STRIPE_SECRET_KEY=sk_test_your_key_here
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Get the key at https://dashboard.stripe.com/apikeys (use a `sk_test_...`
+   key while developing).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. Put your real files in `content/` (replace the placeholders):
+   - `content/ebook.pdf`
+   - `content/ebook.zip`
 
-## Deploy on Vercel
+4. Edit product name, price, and description in `lib/product.ts`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. Run it:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+   ```bash
+   npm run dev
+   ```
+
+   Open http://localhost:3000. Use Stripe's test card `4242 4242 4242 4242`,
+   any future expiry, any CVC.
+
+## Deploy to Vercel
+
+1. Push this repo to GitHub.
+2. Import it in Vercel.
+3. In the Vercel project settings, add the environment variable
+   `STRIPE_SECRET_KEY` (use your **live** key, `sk_live_...`, for real
+   sales).
+4. Deploy. That's it — no webhook or database needed.
+
+## Files
+
+| Path                              | What it does                              |
+| --------------------------------- | ----------------------------------------- |
+| `lib/product.ts`                  | Product name, price, filenames (edit me)  |
+| `app/page.tsx`                    | Landing page with the Buy button          |
+| `app/api/checkout/route.ts`       | Creates the Stripe Checkout session       |
+| `app/success/page.tsx`            | Post-payment page with download links     |
+| `app/api/download/[file]/route.ts`| Verifies payment, then streams the file   |
+| `content/`                        | Your PDF + ZIP (never web-served)         |
